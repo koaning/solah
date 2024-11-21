@@ -17,13 +17,11 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
     - name: Run scraping script
-      run: python scripts/download.py
+      run: | 
+        python -m pip install uv
+        uv run scripts/download.py
+        uv run python overview.py
 
     - name: Commit and push if it changed
       run: |

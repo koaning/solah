@@ -1,5 +1,13 @@
-# pip install openmeteo-requests
-# pip install requests-cache retry-requests numpy pandas
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#   "numpy",
+#   "pandas",
+#   "retry-requests",
+#   "requests-cache",
+#   "openmeteo-requests",
+# ]
+# ///
 
 import openmeteo_requests
 from pathlib import Path
