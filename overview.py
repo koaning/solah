@@ -4,6 +4,7 @@
 #     "altair==5.4.1",
 #     "marimo",
 #     "polars==1.14.0",
+#     "scikit-learn==1.5.2",
 # ]
 # ///
 
@@ -40,7 +41,7 @@ def __(pl):
         pl.read_csv("data/generated.csv")
             .with_columns(
                 date=pl.col("date").str.to_date(format="%m/%d/%Y"), 
-                kWh=pl.col("kWh").str.replace(",", "").cast(pl.Int32)
+                kWh=pl.col("kWh").str.replace(",", "").cast(pl.Int32)/1000
             )
     )
 
@@ -58,13 +59,31 @@ def __(df_meteo, mo):
 
 @app.cell
 def __(df_generated, df_meteo):
-    df_merged = df_generated.join(df_meteo, left_on="date", right_on="date")
+    df_merged = df_generated.join(df_meteo, left_on="date", right_on="date").drop_nulls()
     return (df_merged,)
 
 
 @app.cell
 def __(df_merged, mo, radio_col):
-    mo.hstack([radio_col, df_merged.plot.scatter(radio_col.value, "kWh")])
+    mo.hstack([radio_col, df_merged.plot.scatter("date", radio_col.value), df_merged.plot.scatter(radio_col.value, "kWh")])
+    return
+
+
+@app.cell
+def __(df_merged):
+    from sklearn.linear_model import Ridge
+    from sklearn.ensemble import HistGradientBoostingRegressor
+
+    y = df_merged["kWh"]
+    X = df_merged.drop("date", "kWh")
+
+    preds = Ridge().fit(X, y).predict(X)
+    return HistGradientBoostingRegressor, Ridge, X, preds, y
+
+
+@app.cell
+def __(df_merged, preds):
+    df_merged.with_columns(preds=preds).plot.scatter("preds", "kWh")
     return
 
 
