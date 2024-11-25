@@ -22,6 +22,7 @@ jobs:
         python -m pip install uv
         uv run scripts/download.py
         uv run overview.py
+        rm .cache.sqlite
 
     - name: Commit and push if it changed
       run: |
