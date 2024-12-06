@@ -3,14 +3,16 @@
 # dependencies = [
 #     "altair==5.4.1",
 #     "marimo",
+#     "pandas==2.2.3",
 #     "polars==1.14.0",
 #     "scikit-learn==1.5.2",
+#     "skore==0.4.1",
 # ]
 # ///
 
 import marimo
 
-__generated_with = "0.9.20"
+__generated_with = "0.9.31"
 app = marimo.App(width="medium")
 
 
@@ -65,7 +67,11 @@ def __(df_generated, df_meteo):
 
 @app.cell
 def __(df_merged, mo, radio_col):
-    mo.hstack([radio_col, df_merged.plot.scatter("date", radio_col.value), df_merged.plot.scatter(radio_col.value, "kWh")])
+    mo.hstack([
+        radio_col, 
+        df_merged.plot.scatter("date", radio_col.value), 
+        df_merged.plot.scatter(radio_col.value, "kWh")
+    ])
     return
 
 
@@ -73,28 +79,37 @@ def __(df_merged, mo, radio_col):
 def __(df_merged):
     from sklearn.linear_model import Ridge
     from sklearn.ensemble import HistGradientBoostingRegressor
+    from sklearn.model_selection import cross_val_predict
+
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
 
-    preds = Ridge().fit(X, y).predict(X)
-    return HistGradientBoostingRegressor, Ridge, X, preds, y
+    preds = cross_val_predict(HistGradientBoostingRegressor(), X, y, cv=10)
+    return (
+        HistGradientBoostingRegressor,
+        Ridge,
+        X,
+        cross_val_predict,
+        preds,
+        y,
+    )
 
 
 @app.cell
-def __(df_merged, preds):
-    df_merged.with_columns(preds=preds).plot.scatter("preds", "kWh")
-    return
+def __(df_merged, mo, pl, preds):
+    df_pred = df_merged.with_columns(preds=preds)
+
+    mo.hstack([
+        df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual"), 
+        df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
+    ])
+    return (df_pred,)
 
 
 @app.cell
 def __(df_merged):
     df_merged.write_csv("data/merged.csv")
-    return
-
-
-@app.cell
-def __():
     return
 
 
