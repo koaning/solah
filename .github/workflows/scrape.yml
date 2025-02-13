@@ -22,7 +22,7 @@ jobs:
       run: | 
         python -m pip install uv
         uv run --python 3.11 scripts/download.py
-        uv run overview.py
+        uv run --python 3.12 overview.py
         rm .cache.sqlite
 
     - name: Commit and push if it changed
