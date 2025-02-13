@@ -76,31 +76,43 @@ def _(df_merged, mo, radio_col):
 
 
 @app.cell
-def _(HistGradientBoostingRegressora, df_merged):
+def _(df_merged, mo):
     from sklearn.linear_model import Ridge
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.model_selection import cross_val_predict
 
+    models = {
+        "ridge": Ridge(), 
+        "histboost": HistGradientBoostingRegressor()
+    }
+
+    radio_mod = mo.ui.radio(options=list(models.keys()), value="ridge")
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
-
-    preds = cross_val_predict(HistGradientBoostingRegressora(), X, y, cv=5)
     return (
         HistGradientBoostingRegressor,
         Ridge,
         X,
         cross_val_predict,
-        preds,
+        models,
+        radio_mod,
         y,
     )
 
 
 @app.cell
-def _(df_merged, mo, pl, preds):
+def _(X, cross_val_predict, models, radio_mod, y):
+    preds = cross_val_predict(models[radio_mod.value], X, y, cv=5)
+    return (preds,)
+
+
+@app.cell
+def _(df_merged, mo, pl, preds, radio_mod):
     df_pred = df_merged.with_columns(preds=preds)
 
     mo.hstack([
+        radio_mod,
         df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual"), 
         df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
     ])
@@ -109,7 +121,7 @@ def _(df_merged, mo, pl, preds):
 
 @app.cell
 def _(df_merged):
-    df_merged.write_csv("data/merged.csv")
+    df_merged
     return
 
 
