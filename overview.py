@@ -12,12 +12,12 @@
 
 import marimo
 
-__generated_with = "0.9.31"
+__generated_with = "0.11.0"
 app = marimo.App(width="medium")
 
 
 @app.cell
-def __():
+def _():
     import marimo as mo
     import polars as pl 
     import altair as alt
@@ -25,7 +25,7 @@ def __():
 
 
 @app.cell
-def __(pl):
+def _(pl):
     df_meteo = (
         pl.read_csv("data/history.csv")
         .with_columns(
@@ -38,7 +38,7 @@ def __(pl):
 
 
 @app.cell
-def __(pl):
+def _(pl):
     df_generated = (
         pl.read_csv("data/generated.csv")
             .with_columns(
@@ -52,7 +52,7 @@ def __(pl):
 
 
 @app.cell
-def __(df_meteo, mo):
+def _(df_meteo, mo):
     cols = [n for n in df_meteo.columns if n != "date"]
 
     radio_col = mo.ui.radio(options=cols, value="sunshine_duration")
@@ -60,13 +60,13 @@ def __(df_meteo, mo):
 
 
 @app.cell
-def __(df_generated, df_meteo):
+def _(df_generated, df_meteo):
     df_merged = df_generated.join(df_meteo, left_on="date", right_on="date").drop_nulls()
     return (df_merged,)
 
 
 @app.cell
-def __(df_merged, mo, radio_col):
+def _(df_merged, mo, radio_col):
     mo.hstack([
         radio_col, 
         df_merged.plot.scatter("date", radio_col.value), 
@@ -76,7 +76,7 @@ def __(df_merged, mo, radio_col):
 
 
 @app.cell
-def __(df_merged):
+def _(HistGradientBoostingRegressora, df_merged):
     from sklearn.linear_model import Ridge
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.model_selection import cross_val_predict
@@ -85,7 +85,7 @@ def __(df_merged):
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
 
-    preds = cross_val_predict(HistGradientBoostingRegressor(), X, y, cv=10)
+    preds = cross_val_predict(HistGradientBoostingRegressora(), X, y, cv=5)
     return (
         HistGradientBoostingRegressor,
         Ridge,
@@ -97,7 +97,7 @@ def __(df_merged):
 
 
 @app.cell
-def __(df_merged, mo, pl, preds):
+def _(df_merged, mo, pl, preds):
     df_pred = df_merged.with_columns(preds=preds)
 
     mo.hstack([
@@ -108,7 +108,7 @@ def __(df_merged, mo, pl, preds):
 
 
 @app.cell
-def __(df_merged):
+def _(df_merged):
     df_merged.write_csv("data/merged.csv")
     return
 
