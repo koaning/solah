@@ -32,8 +32,6 @@ def _(pl):
             date=pl.col("date").str.to_date(), 
         )
     )
-
-    df_meteo.plot.line("date", "sunshine_duration")
     return (df_meteo,)
 
 
@@ -46,8 +44,6 @@ def _(pl):
                 kWh=pl.col("kWh").str.replace(",", "").cast(pl.Int32)/1000
             )
     )
-
-    df_generated.plot.line("date", "kWh")
     return (df_generated,)
 
 
@@ -66,13 +62,24 @@ def _(df_generated, df_meteo):
 
 
 @app.cell
-def _(df_merged, mo, radio_col):
-    mo.hstack([
-        radio_col, 
-        df_merged.plot.scatter("date", radio_col.value), 
-        df_merged.plot.scatter(radio_col.value, "kWh")
-    ])
-    return
+def _(X, df_meteo, mo, models, radio_mod, y):
+    models[radio_mod.value].fit(X, y)
+
+    df_to_predict = df_meteo.drop_nulls()
+
+    out = (
+        df_to_predict
+        .with_columns(pred=models[radio_mod.value].predict(df_to_predict.drop("date")))
+        .tail(1)
+        .to_dicts()
+    )[0]
+
+    mo.md(f"""
+    ## Day ahead prediction
+
+    For **{out['date']}** we seem to predict **{out['pred']:.1f} kWh** of energy production. 
+    """)
+    return df_to_predict, out
 
 
 @app.cell
@@ -117,6 +124,16 @@ def _(df_merged, mo, pl, preds, radio_mod):
         df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
     ])
     return (df_pred,)
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Cross validated metrics
+
+    If you are curious to explore the data more in depth, you can explore the dataframe listed below.
+    """)
+    return
 
 
 @app.cell

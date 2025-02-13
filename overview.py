@@ -120,8 +120,34 @@ def _(df_merged, mo, pl, preds, radio_mod):
 
 
 @app.cell
-def _(df_merged):
-    df_merged
+def _(X, df_meteo, mo, models, radio_mod, y):
+    models[radio_mod.value].fit(X, y)
+
+    df_to_predict = df_meteo.drop_nulls()
+
+    out = (
+        df_to_predict
+        .with_columns(pred=models[radio_mod.value].predict(df_to_predict.drop("date")))
+        .tail(1)
+        .to_dicts()
+    )[0]
+
+    mo.md(f"""
+    ## Day ahead prediction
+
+    For **{out['date']}** we seem to predict **{out['pred']:.1f} kWh** of energy production. 
+    """)
+
+
+@app.cell
+def _(df_merged, mo):
+    if mo.app_meta().mode == "script":
+        df_merged.write_csv("data/merged.csv")
+    return
+
+
+@app.cell
+def _():
     return
 
 
