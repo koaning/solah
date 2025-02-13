@@ -21,7 +21,7 @@ jobs:
     - name: Run scraping script
       run: | 
         python -m pip install uv
-        uv run scripts/download.py
+        uv run --python 3.11 scripts/download.py
         uv run overview.py
         rm .cache.sqlite
 
