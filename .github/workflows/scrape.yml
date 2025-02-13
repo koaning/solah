@@ -3,6 +3,7 @@ name: Git Scraping
 on:
   schedule:
     - cron:  '0 12 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
