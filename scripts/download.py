@@ -1,7 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#   "numpy",
 #   "pandas",
 #   "retry-requests",
 #   "requests-cache",
