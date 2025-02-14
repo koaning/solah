@@ -130,7 +130,7 @@ def _(mo):
     mo.md("""
     ## Cross validated metrics
 
-    If you are curious to explore the data more in depth, you can explore the dataframe listed below.
+    If you are curious to explore the data more in depth, you can do so by exploring below.
     """)
     return
 
