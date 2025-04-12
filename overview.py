@@ -11,7 +11,7 @@
 
 import marimo
 
-__generated_with = "0.11.0"
+__generated_with = "0.12.8"
 app = marimo.App(width="medium")
 
 
@@ -32,7 +32,7 @@ def _(pl):
         )
     )
 
-    df_meteo.plot.line("date", "sunshine_duration")
+    df_meteo.plot.line("date", "sunshine_duration").properties(width=300, height=300)
     return (df_meteo,)
 
 
@@ -46,7 +46,7 @@ def _(pl):
             )
     )
 
-    df_generated.plot.line("date", "kWh")
+    df_generated.plot.line("date", "kWh").properties(width=300, height=300)
     return (df_generated,)
 
 
@@ -68,8 +68,8 @@ def _(df_generated, df_meteo):
 def _(df_merged, mo, radio_col):
     mo.hstack([
         radio_col, 
-        df_merged.plot.scatter("date", radio_col.value), 
-        df_merged.plot.scatter(radio_col.value, "kWh")
+        df_merged.plot.scatter("date", radio_col.value).properties(width=300, height=300), 
+        df_merged.plot.scatter(radio_col.value, "kWh").properties(width=300, height=300)
     ])
     return
 
@@ -112,8 +112,8 @@ def _(df_merged, mo, pl, preds, radio_mod):
 
     mo.hstack([
         radio_mod,
-        df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual"), 
-        df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
+        df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual", width=300, height=300), 
+        df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time", width=300, height=300)
     ])
     return (df_pred,)
 
@@ -136,6 +136,7 @@ def _(X, df_meteo, mo, models, radio_mod, y):
 
     For **{out['date']}** we seem to predict **{out['pred']:.1f} kWh** of energy production. 
     """)
+    return df_to_predict, out
 
 
 @app.cell
