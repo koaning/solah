@@ -12,7 +12,7 @@
 
 import marimo
 
-__generated_with = "0.13.0"
+__generated_with = "0.12.8"
 app = marimo.App(width="medium")
 
 
@@ -21,7 +21,7 @@ def _():
     import marimo as mo
     import polars as pl 
     import altair as alt
-    return mo, pl
+    return alt, mo, pl
 
 
 @app.cell
@@ -52,7 +52,7 @@ def _(df_meteo, mo):
     cols = [n for n in df_meteo.columns if n != "date"]
 
     radio_col = mo.ui.radio(options=cols, value="sunshine_duration")
-    return
+    return cols, radio_col
 
 
 @app.cell
@@ -78,7 +78,7 @@ def _(mo, out, p1):
 
 
 @app.cell
-def _(df_generated, pl):
+def _(df_generated, mo, pl):
     from pyobsplot import Plot
 
     penguins = pl.read_csv("https://github.com/juba/pyobsplot/raw/main/doc/data/penguins.csv")
@@ -91,8 +91,8 @@ def _(df_generated, pl):
             # Plot.line(df_with_pred, {"x": "date", "y": "pred", "stroke": "steelblue"}),
             Plot.dot(df_generated,{"x": "date", "y": "kWh"}),
         ]
-    })
-    return (p1,)
+    }, theme=mo.app_meta().theme)
+    return Plot, p1, penguins
 
 
 @app.cell
@@ -115,7 +115,7 @@ def _(X, df_meteo, mo, models, radio_mod, y):
 
     For **{out['date']}** we seem to predict **{out['pred']:.1f} kWh** of energy production. 
     """)
-    return (out,)
+    return df_to_predict, df_with_pred, out
 
 
 @app.cell
@@ -132,7 +132,15 @@ def _(df_merged, mo):
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
-    return X, cross_val_predict, models, radio_mod, y
+    return (
+        HistGradientBoostingRegressor,
+        Ridge,
+        X,
+        cross_val_predict,
+        models,
+        radio_mod,
+        y,
+    )
 
 
 @app.cell
@@ -150,7 +158,7 @@ def _(df_merged, mo, pl, preds, radio_mod):
         df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual"), 
         df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
     ])
-    return
+    return (df_pred,)
 
 
 @app.cell
