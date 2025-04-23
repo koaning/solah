@@ -18,15 +18,12 @@ app = marimo.App(width="full")
 
 
 @app.cell(hide_code=True)
-def _(err_slider, mo, out, p1, p2, p3, score_vals, window_slider):
+def _(mo, out, p1, p2, p3, score_vals, sliders):
     mo.vstack([
         mo.hstack([
             mo.stat(value=out['date'], label="Date", bordered=True),
             mo.stat(value=f"{out['pred']:.1f} kWh ± {(score_vals[-1] - score_vals[0])/2:.2f}", label="Predicted power output", bordered=True),
-            mo.vstack([
-                window_slider, 
-                err_slider
-            ]),
+            sliders,
         ], widths="equal", gap=1),
         mo.hstack([
             mo.vstack([mo.md("## kWh over time"), p1]), 
@@ -40,9 +37,14 @@ def _(err_slider, mo, out, p1, p2, p3, score_vals, window_slider):
 @app.cell
 def _():
     import marimo as mo
+    return (mo,)
+
+
+@app.cell
+def _():
     import polars as pl 
     import altair as alt
-    return alt, mo, pl
+    return alt, pl
 
 
 @app.cell
@@ -86,7 +88,15 @@ def _(df_generated, df_meteo):
 def _(mo):
     window_slider = mo.ui.slider(7, 31, 1, label="Window width", value=14)
     err_slider = mo.ui.slider(0.1, 3, 0.01, label="Error smoothing", value=0.2)
-    return err_slider, window_slider
+
+    sliders = mo.md("""
+    Change the settings 
+
+    {window_slider}
+
+    {err_slider}
+    """).batch(window_slider=window_slider, err_slider=err_slider)
+    return err_slider, sliders, window_slider
 
 
 @app.cell(hide_code=True)
