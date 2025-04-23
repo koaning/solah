@@ -1,2 +1,2 @@
 pages:
-	uv run marimo export html-wasm overview-pages.py --output docs
+	uv run marimo export html-wasm overview-dashboard.py --output docs
