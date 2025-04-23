@@ -1,9 +1,10 @@
 # /// script
 # dependencies = [
 #     "altair==5.4.1",
-#     "marimo",
+#     "marimo[lsp]",
 #     "pandas==2.2.3",
 #     "polars==1.14.0",
+#     "pyobsplot==0.5.2",
 #     "scikit-learn==1.5.2",
 #     "skore==0.4.1",
 # ]
@@ -11,7 +12,7 @@
 
 import marimo
 
-__generated_with = "0.11.0"
+__generated_with = "0.13.0"
 app = marimo.App(width="medium")
 
 
@@ -20,7 +21,7 @@ def _():
     import marimo as mo
     import polars as pl 
     import altair as alt
-    return alt, mo, pl
+    return mo, pl
 
 
 @app.cell
@@ -51,7 +52,7 @@ def _(df_meteo, mo):
     cols = [n for n in df_meteo.columns if n != "date"]
 
     radio_col = mo.ui.radio(options=cols, value="sunshine_duration")
-    return cols, radio_col
+    return
 
 
 @app.cell
@@ -61,24 +62,60 @@ def _(df_generated, df_meteo):
 
 
 @app.cell
+def _(mo, out, p1):
+    mo.vstack([
+        mo.hstack([
+            mo.stat(value=out['date'], label="Date", bordered=True),
+            mo.stat(value=f"{out['pred']:.1f} kWh", label="Predicted power output", bordered=True),
+            mo.stat(value=f"{out['pred']:.1f} kWh", label="Average prediction error", bordered=True),
+            mo.stat(value=f"{out['pred']:.1f} kWh", label="Average prediction error", bordered=True),
+        ], widths="equal", gap=1),
+        mo.hstack([
+            p1, p1
+        ])
+    ])
+    return
+
+
+@app.cell
+def _(df_generated, pl):
+    from pyobsplot import Plot
+
+    penguins = pl.read_csv("https://github.com/juba/pyobsplot/raw/main/doc/data/penguins.csv")
+
+    p1 = Plot.plot({
+        "grid": True,
+        "color": {"legend": True},
+        "title": "kWh produced over time",
+        "marks": [
+            # Plot.line(df_with_pred, {"x": "date", "y": "pred", "stroke": "steelblue"}),
+            Plot.dot(df_generated,{"x": "date", "y": "kWh"}),
+        ]
+    })
+    return (p1,)
+
+
+@app.cell
 def _(X, df_meteo, mo, models, radio_mod, y):
     models[radio_mod.value].fit(X, y)
 
     df_to_predict = df_meteo.drop_nulls()
 
-    out = (
+    df_with_pred = (
         df_to_predict
-        .with_columns(pred=models[radio_mod.value].predict(df_to_predict.drop("date")))
-        .tail(1)
-        .to_dicts()
-    )[0]
+        .with_columns(
+            pred=models[radio_mod.value].predict(df_to_predict.drop("date")),
+        )
+    )
+
+    out = df_with_pred.tail(1).to_dicts()[0]
 
     mo.md(f"""
     ## Day ahead prediction
 
     For **{out['date']}** we seem to predict **{out['pred']:.1f} kWh** of energy production. 
     """)
-    return df_to_predict, out
+    return (out,)
 
 
 @app.cell
@@ -89,22 +126,13 @@ def _(df_merged, mo):
 
     models = {
         "ridge": Ridge(), 
-        "histboost": HistGradientBoostingRegressor()
     }
 
     radio_mod = mo.ui.radio(options=list(models.keys()), value="ridge")
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
-    return (
-        HistGradientBoostingRegressor,
-        Ridge,
-        X,
-        cross_val_predict,
-        models,
-        radio_mod,
-        y,
-    )
+    return X, cross_val_predict, models, radio_mod, y
 
 
 @app.cell
@@ -122,16 +150,18 @@ def _(df_merged, mo, pl, preds, radio_mod):
         df_pred.plot.scatter("preds", "kWh").properties(title="predicted vs. actual"), 
         df_pred.with_columns(err=pl.col("preds") - pl.col("kWh")).plot.scatter("date", "err").properties(title="error over time")
     ])
-    return (df_pred,)
+    return
 
 
 @app.cell
 def _(mo):
-    mo.md("""
-    ## Cross validated metrics
+    mo.md(
+        """
+        ## Cross validated metrics
 
-    If you are curious to explore the data more in depth, you can do so by exploring below.
-    """)
+        If you are curious to explore the data more in depth, you can do so by exploring below.
+        """
+    )
     return
 
 
