@@ -5,7 +5,7 @@
 #     "numpy==2.2.5",
 #     "pandas==2.2.3",
 #     "polars==1.14.0",
-#     "pyobsplot==0.5.2",
+#     "pyobsplot==0.5.3.2",
 #     "scikit-learn==1.5.2",
 #     "skore==0.4.1",
 # ]
@@ -18,15 +18,12 @@ app = marimo.App(width="full")
 
 
 @app.cell(hide_code=True)
-def _(err_slider, mo, out, p1, p2, p3, score_vals, window_slider):
+def _(mo, out, p1, p2, p3, score_vals, sliders):
     mo.vstack([
         mo.hstack([
             mo.stat(value=out['date'], label="Date", bordered=True),
             mo.stat(value=f"{out['pred']:.1f} kWh ± {(score_vals[-1] - score_vals[0])/2:.2f}", label="Predicted power output", bordered=True),
-            mo.vstack([
-                window_slider, 
-                err_slider
-            ]),
+            sliders,
         ], widths="equal", gap=1),
         mo.hstack([
             mo.vstack([mo.md("## kWh over time"), p1]), 
@@ -40,9 +37,14 @@ def _(err_slider, mo, out, p1, p2, p3, score_vals, window_slider):
 @app.cell
 def _():
     import marimo as mo
+    return (mo,)
+
+
+@app.cell
+def _():
     import polars as pl 
     import altair as alt
-    return alt, mo, pl
+    return alt, pl
 
 
 @app.cell
@@ -86,11 +88,17 @@ def _(df_generated, df_meteo):
 def _(mo):
     window_slider = mo.ui.slider(7, 31, 1, label="Window width", value=14)
     err_slider = mo.ui.slider(0.1, 3, 0.01, label="Error smoothing", value=0.2)
-    return err_slider, window_slider
+
+    sliders = mo.md("""
+    {window_slider}
+
+    {err_slider}
+    """).batch(window_slider=window_slider, err_slider=err_slider)
+    return err_slider, sliders, window_slider
 
 
 @app.cell(hide_code=True)
-def _(df_density, df_err, df_generated, df_quantiles, mo, pl, window_slider):
+def _(df_density, df_err, df_generated, df_quantiles, mo, pl, sliders):
     from pyobsplot import Plot
 
     penguins = pl.read_csv("https://github.com/juba/pyobsplot/raw/main/doc/data/penguins.csv")
@@ -101,7 +109,7 @@ def _(df_density, df_err, df_generated, df_quantiles, mo, pl, window_slider):
             Plot.dot(df_generated,{"x": "date", "y": "kWh", "opacity": 0.4}),
             Plot.lineY(df_generated, 
                Plot.windowY(
-                   {"k": window_slider.value}, 
+                   {"k": sliders.value["window_slider"]}, 
                    {"x": "date", "y": "kWh", "stroke": "steelblue", "strokeWidth": 3}
             ))
         ],
@@ -170,7 +178,6 @@ def _(X, df_meteo, models, radio_mod, y):
 @app.cell(hide_code=True)
 def _(df_merged, mo):
     from sklearn.linear_model import Ridge
-    from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.model_selection import cross_val_predict
 
     models = {
@@ -181,15 +188,7 @@ def _(df_merged, mo):
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
-    return (
-        HistGradientBoostingRegressor,
-        Ridge,
-        X,
-        cross_val_predict,
-        models,
-        radio_mod,
-        y,
-    )
+    return Ridge, X, cross_val_predict, models, radio_mod, y
 
 
 @app.cell(hide_code=True)
@@ -237,12 +236,12 @@ def _(df_err, np, pl, xs):
 
 
 @app.cell(hide_code=True)
-def _(df_pred, err_slider, out, pl):
+def _(df_pred, out, pl, sliders):
     import numpy as np
 
     df_err = df_pred.with_columns(
         err=pl.col("preds") - pl.col("kWh"), 
-        dist=np.exp(-((pl.lit(out["pred"]) - pl.col("preds"))/err_slider.value)**2)
+        dist=np.exp(-((pl.lit(out["pred"]) - pl.col("preds"))/sliders.value["err_slider"])**2)
     )
 
     weighted_mean = np.average(df_err["preds"], weights=df_err["dist"])
