@@ -141,24 +141,20 @@ def _(X, df_meteo, mo, models, radio_mod, y):
 
 
 @app.cell
-def _(df_merged, mo):
-    if mo.app_meta().mode == "script":
-        df_merged.write_csv("data/merged.csv")
+def _(df_to_predict, models, radio_mod):
+    df_to_predict.with_columns(pred=models[radio_mod.value].predict(df_to_predict.drop("date")))
     return
 
 
 @app.cell
-def _(out):
-    out
+def _(df_to_predict, mo, models, radio_mod):
+    if mo.app_meta().mode == "script":   
+        (
+            df_to_predict
+               .with_columns(pred=models[radio_mod.value].predict(df_to_predict.drop("date")))
+               .write_csv("data/merged.csv")
+        )
     return
-
-
-@app.cell
-def _(out):
-    import srsly
-
-    srsly.write_json("data/pred.json", out)
-    return (srsly,)
 
 
 if __name__ == "__main__":
