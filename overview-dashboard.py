@@ -5,7 +5,7 @@
 #     "numpy==2.2.5",
 #     "pandas==2.2.3",
 #     "polars==1.14.0",
-#     "pyobsplot==0.5.2",
+#     "pyobsplot==0.5.3.2",
 #     "scikit-learn==1.5.2",
 #     "skore==0.4.1",
 # ]
@@ -90,8 +90,6 @@ def _(mo):
     err_slider = mo.ui.slider(0.1, 3, 0.01, label="Error smoothing", value=0.2)
 
     sliders = mo.md("""
-    Change the settings 
-
     {window_slider}
 
     {err_slider}
@@ -100,7 +98,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(df_density, df_err, df_generated, df_quantiles, mo, pl, window_slider):
+def _(df_density, df_err, df_generated, df_quantiles, mo, pl, sliders):
     from pyobsplot import Plot
 
     penguins = pl.read_csv("https://github.com/juba/pyobsplot/raw/main/doc/data/penguins.csv")
@@ -111,7 +109,7 @@ def _(df_density, df_err, df_generated, df_quantiles, mo, pl, window_slider):
             Plot.dot(df_generated,{"x": "date", "y": "kWh", "opacity": 0.4}),
             Plot.lineY(df_generated, 
                Plot.windowY(
-                   {"k": window_slider.value}, 
+                   {"k": sliders.value["window_slider"]}, 
                    {"x": "date", "y": "kWh", "stroke": "steelblue", "strokeWidth": 3}
             ))
         ],
@@ -180,7 +178,6 @@ def _(X, df_meteo, models, radio_mod, y):
 @app.cell(hide_code=True)
 def _(df_merged, mo):
     from sklearn.linear_model import Ridge
-    from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.model_selection import cross_val_predict
 
     models = {
@@ -191,15 +188,7 @@ def _(df_merged, mo):
 
     y = df_merged["kWh"]
     X = df_merged.drop("date", "kWh")
-    return (
-        HistGradientBoostingRegressor,
-        Ridge,
-        X,
-        cross_val_predict,
-        models,
-        radio_mod,
-        y,
-    )
+    return Ridge, X, cross_val_predict, models, radio_mod, y
 
 
 @app.cell(hide_code=True)
@@ -247,12 +236,12 @@ def _(df_err, np, pl, xs):
 
 
 @app.cell(hide_code=True)
-def _(df_pred, err_slider, out, pl):
+def _(df_pred, out, pl, sliders):
     import numpy as np
 
     df_err = df_pred.with_columns(
         err=pl.col("preds") - pl.col("kWh"), 
-        dist=np.exp(-((pl.lit(out["pred"]) - pl.col("preds"))/err_slider.value)**2)
+        dist=np.exp(-((pl.lit(out["pred"]) - pl.col("preds"))/sliders.value["err_slider"])**2)
     )
 
     weighted_mean = np.average(df_err["preds"], weights=df_err["dist"])
