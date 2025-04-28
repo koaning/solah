@@ -6,6 +6,7 @@
 #     "polars==1.14.0",
 #     "scikit-learn==1.5.2",
 #     "skore==0.4.1",
+#     "srsly==2.5.1",
 # ]
 # ///
 
@@ -147,8 +148,17 @@ def _(df_merged, mo):
 
 
 @app.cell
-def _():
+def _(out):
+    out
     return
+
+
+@app.cell
+def _(out):
+    import srsly
+
+    srsly.write_json("data/pred.json", out)
+    return (srsly,)
 
 
 if __name__ == "__main__":

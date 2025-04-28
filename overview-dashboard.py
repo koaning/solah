@@ -7,7 +7,7 @@
 #     "polars==1.14.0",
 #     "pyobsplot==0.5.3.2",
 #     "scikit-learn==1.5.2",
-#     "skore==0.4.1",
+#     "pyarrow==18.1.0",
 # ]
 # ///
 
@@ -98,10 +98,8 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(df_density, df_err, df_generated, df_quantiles, mo, pl, sliders):
+def _(df_density, df_err, df_generated, df_quantiles, mo, sliders):
     from pyobsplot import Plot
-
-    penguins = pl.read_csv("https://github.com/juba/pyobsplot/raw/main/doc/data/penguins.csv")
 
     p1 = Plot.plot({
         "grid": True,
@@ -155,7 +153,7 @@ def _(df_density, df_err, df_generated, df_quantiles, mo, pl, sliders):
             "background-color": "#181C1A"
         } if mo.app_meta().theme == "dark" else {}
     }, theme=mo.app_meta().theme)
-    return Plot, p1, p2, p3, penguins
+    return Plot, p1, p2, p3
 
 
 @app.cell(hide_code=True)
