@@ -4,7 +4,7 @@
 #   "retry-requests",
 #   "requests-cache",
 #   "openmeteo-requests",
-#   "altair==4",
+#   "altair",
 # ]
 # ///
 
